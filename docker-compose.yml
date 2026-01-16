@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: perpustakaan_sdn_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: perpustakaan_sdn
+      MYSQL_USER: bookuser
+      MYSQL_PASSWORD: bookpass123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
+    networks:
+      - book_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  api:
+    image: oven/bun:latest
+    container_name: perpustakaan_sdn_api
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - api_node_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=bookuser
+      - DB_PASSWORD=bookpass123
+      - DB_NAME=perpustakaan_sdn
+      - JWT_SECRET=09e08625f9b2963ffc92daf546201d76fe2ab33cf2f64a526caabd6238491ba9
+      - PORT=3000
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "bun install && bun run src/index.ts"
+    networks:
+      - book_network
+
+  frontend:
+    platform: linux/amd64
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: perpustakaan_sdn_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      #- /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - book_network
+    depends_on:
+      - api
+    command: sh -c "npm install -g lodash.debounce && npm install && npm run dev -- --host"
+    
+
+volumes:
+  mysql_data:
+  api_node_modules:
+
+networks:
+  book_network:
+    driver: bridge
