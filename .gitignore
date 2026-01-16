@@ -22,3 +22,6 @@ bun.lock
 # OS files
 .DS_Store
 Thumbs.db
+
+# Asset files
+backend/public/uploads/*
