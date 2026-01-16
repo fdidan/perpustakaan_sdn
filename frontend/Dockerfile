@@ -1,6 +1,8 @@
-FROM --platform=linux/amd64 node:18-alpine
+FROM node:18-slim
 
 WORKDIR /app
+
+RUN chown -R node:node /app
 
 COPY package*.json ./
 
