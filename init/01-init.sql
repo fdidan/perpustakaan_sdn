@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS books (
   title VARCHAR(255) NOT NULL,
   author VARCHAR(255) NOT NULL,
   genre_id INT NOT NULL,
-  synopsis TEXT,
+  description TEXT,
   cover_img VARCHAR(255) DEFAULT NULL,
   penerbit VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -36,6 +36,18 @@ CREATE TABLE IF NOT EXISTS books (
   INDEX idx_title (title),
   INDEX idx_author (author),
   FOREIGN KEY (genre_id) REFERENCES genres(id),
-  FULLTEXT KEY ft_search (title, author, synopsis)
+  FULLTEXT KEY ft_search (title, author, description)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS book_history (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  book_id INT NOT NULL,
+  views INT NOT NULL DEFAULT 1,
+  last_viewed DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_user_book (user_id, book_id),
+  INDEX idx_user_id (user_id),
+  INDEX idx_book_id (book_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
