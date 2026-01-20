@@ -302,3 +302,4 @@ INSERT INTO books (isbn, title, author, genre_id, description, cover_img, penerb
 INSERT INTO books (isbn, title, author, genre_id, description, cover_img, penerbit) VALUES ('9786232544291', 'Seri Cerita Balita : Aku Suka Berbagi', 'Dar Mizan', 1, 'None', 'seri-cerita-balita-aku-suka-berbagi.jpg', 'Dar Mizan');
 INSERT INTO books (isbn, title, author, genre_id, description, cover_img, penerbit) VALUES ('9789792856460', 'PR Seni Rupa untuk SD/MI Kelas 4A', 'Intan Pariwara Edukasi', 11, 'None', 'pr-seni-rupa-untuk-sdmi-kelas-4a.jpg', 'Intan Pariwara Edukasi');
 INSERT INTO books (isbn, title, author, genre_id, description, cover_img, penerbit) VALUES ('9786235180991', 'Pendidikan Agama Islam dan Budi Pekerti 5 SD/MI Kelas 5 Kurikulum Merdeka', 'Yudhistira', 11, 'None', 'pendidikan-agama-islam-dan-budi-pekerti-5-sdmi-kelas-5-kurikulum-merdeka.jpg', 'Yudhistira');
+

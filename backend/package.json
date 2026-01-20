@@ -15,10 +15,10 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.9.0"
   },
-    "optionalDependencies": {
-      "stopwords-iso": "^1.1.0",
-      "stopword": "^3.1.5"
-    },
+  "optionalDependencies": {
+    "stopwords-iso": "^1.1.0",
+    "stopword": "^3.1.5"
+  },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.5",

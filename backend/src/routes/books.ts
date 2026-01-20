@@ -35,24 +35,24 @@ books.get('/search', async (c) => {
   try {
     const query = c.req.query('q') || '';
     const genreId = c.req.query('genre') || '';
-    
+
     let sql = `
       SELECT b.*, g.name as genre_name 
       FROM books b 
       INNER JOIN genres g ON b.genre_id = g.id 
-      WHERE b.title LIKE ? OR b.author LIKE ? OR b.synopsis LIKE ?
+      WHERE b.title LIKE ? OR b.author LIKE ? OR b.description LIKE ?
     `;
     let params = [`%${query}%`, `%${query}%`, `%${query}%`];
-    
+
     if (genreId) {
       sql += ' AND b.genre_id = ?';
       params.push(genreId);
     }
-    
+
     sql += ' ORDER BY b.created_at DESC';
-    
+
     const [rows] = await pool.query<Book[]>(sql, params);
-    
+
     return c.json({ books: rows });
   } catch (error) {
     console.error('Search books error:', error);
@@ -68,22 +68,22 @@ books.get('/search', async (c) => {
 books.get('/:slug', async (c) => {
   try {
     const slug = c.req.param('slug');
-    
+
     const [allBooks] = await pool.query<Book[]>(
       `SELECT b.*, g.name as genre_name 
        FROM books b 
        INNER JOIN genres g ON b.genre_id = g.id`
     );
-    
+
     const targetBook = allBooks.find(book => {
       const bookSlug = createSlugFromTitle(book.title);
       return bookSlug === slug.toLowerCase();
     });
-    
+
     if (!targetBook) {
       return c.json({ error: 'Book not found' }, 404);
     }
-    
+
     // Record viewing history for authenticated users
     // Try to extract JWT from Authorization header (optional - doesn't fail if not present)
     const user = extractJWT(c);
@@ -100,7 +100,7 @@ books.get('/:slug', async (c) => {
         console.error('Failed to record book history:', historyError);
       }
     }
-    
+
     return c.json({ book: targetBook });
   } catch (error) {
     console.error('Get book error:', error);
@@ -118,13 +118,13 @@ books.post('/', authMiddleware, pustakawanOnly, async (c) => {
     const title = formData.get('title') as string;
     const author = formData.get('author') as string;
     const genreId = formData.get('genreId') as string;
-    const synopsis = formData.get('synopsis') as string;
+    const synopsis = formData.get('description') as string;
     const coverImage = formData.get('coverImage') as File;
-    
+
     if (!title || !author || !genreId || !synopsis) {
       return c.json({ error: 'All fields are required' }, 400);
     }
-    
+
     let coverImageName = null;
     if (coverImage && coverImage.size > 0) {
       const validation = validateImage(coverImage);
@@ -134,18 +134,18 @@ books.post('/', authMiddleware, pustakawanOnly, async (c) => {
       // Generate filename based on title
       coverImageName = await saveFileWithTitle(coverImage, title);
     }
-    
+
     const [result] = await pool.query<any>(
-      'INSERT INTO books (title, author, genre_id, synopsis, cover_img) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO books (title, author, genre_id, description, cover_img) VALUES (?, ?, ?, ?, ?)',
       [title, author, genreId, synopsis, coverImageName]
     );
-    
+
     return c.json({
       message: 'Book created successfully',
       bookId: result.insertId,
       slug: createSlugFromTitle(title)
     }, 201);
-    
+
   } catch (error) {
     console.error('Create book error:', error);
     return c.json({ error: 'Failed to create book' }, 500);
@@ -163,50 +163,55 @@ books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
     const title = formData.get('title') as string;
     const author = formData.get('author') as string;
     const genreId = formData.get('genreId') as string;
-    const synopsis = formData.get('synopsis') as string;
+    const synopsis = formData.get('description') as string;
     const coverImage = formData.get('coverImage') as File;
-    
+
     if (!title || !author || !genreId || !synopsis) {
       return c.json({ error: 'All fields are required' }, 400);
     }
-    
+
     // Get current book data
     const [currentBook] = await pool.query<Book[]>(
       'SELECT cover_img FROM books WHERE id = ?',
       [id]
     );
-    
+
     if (currentBook.length === 0) {
       return c.json({ error: 'Book not found' }, 404);
     }
-    
+
     let coverImageName = currentBook[0].cover_img;
-    
+
     // Handle image update
     if (coverImage && coverImage.size > 0) {
       const validation = validateImage(coverImage);
       if (!validation.valid) {
         return c.json({ error: validation.error }, 400);
       }
-      
-      // Replace old image with new one
+
+      // Replace old image with new on
+
+      api:
+      image: oven / bun: latest
+      container_name: perpustakaan_sdn_api
+      restart: alwae
       coverImageName = await replaceFile(coverImageName, coverImage, title);
     }
-    
+
     const [result] = await pool.query<any>(
-      'UPDATE books SET title = ?, author = ?, genre_id = ?, synopsis = ?, cover_img = ? WHERE id = ?',
+      'UPDATE books SET title = ?, author = ?, genre_id = ?, description = ?, cover_img = ? WHERE id = ?',
       [title, author, genreId, synopsis, coverImageName, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return c.json({ error: 'Book not found' }, 404);
     }
-    
-    return c.json({ 
+
+    return c.json({
       message: 'Book updated successfully',
       slug: createSlugFromTitle(title)
     });
-    
+
   } catch (error) {
     console.error('Update book error:', error);
     return c.json({ error: 'Failed to update book' }, 500);
@@ -220,25 +225,25 @@ books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
 books.delete('/:id', authMiddleware, pustakawanOnly, async (c) => {
   try {
     const id = c.req.param('id');
-    
+
     // Get current book data for cover image deletion
     const [currentBook] = await pool.query<Book[]>(
       'SELECT cover_img FROM books WHERE id = ?',
       [id]
     );
-    
+
     if (currentBook.length > 0 && currentBook[0].cover_img) {
       deleteFile(currentBook[0].cover_img);
     }
-    
+
     const [result] = await pool.query<any>('DELETE FROM books WHERE id = ?', [id]);
-    
+
     if (result.affectedRows === 0) {
       return c.json({ error: 'Book not found' }, 404);
     }
-    
+
     return c.json({ message: 'Book deleted successfully' });
-    
+
   } catch (error) {
     console.error('Delete book error:', error);
     return c.json({ error: 'Failed to delete book' }, 500);
